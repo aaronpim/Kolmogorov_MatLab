@@ -1,5 +1,5 @@
 epsilon = 1;
-alpha = 0.1;
+alpha = 1;
 v = 1;
 error_epsilon = 1e-8;
 ud = @(location, state) (location.x<0.4).*(location.x>0.2).*(location.y>-0.3).*(location.y<-0.1);

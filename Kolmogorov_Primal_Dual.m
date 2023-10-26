@@ -64,6 +64,7 @@ results_adjoint = solvepde(model_adjoint);
 %% Initialise Error vector and count variable
 Err = error_epsilon + 1;
 Err_vec = [];
+A_Err_vec = [];
 count = 0;
 
 % Assign Primal equation coefficients
@@ -99,12 +100,16 @@ while Err > error_epsilon
     %% Calculate relative L2 error between one iteration and the next.
     if count > 1
         du = ((results_forward.NodalSolution - u_old)./results_forward.NodalSolution).^2;
+        adu = (results_forward.NodalSolution - u_old).^2;
         du(isnan(du)) =0;
         X  = results_forward.Mesh.Nodes(1,:);
         V  = results_forward.Mesh.Nodes(2,:);
         F = scatteredInterpolant(X',V',du);
+        AF = scatteredInterpolant(X',V',adu);
         Err = sqrt(integral2(@(x,y) F(x,y), -1, 1, -v, v));
         Err_vec = [Err_vec,Err];
+        A_Err = sqrt(integral2(@(x,y) AF(x,y), -1, 1, -v, v));
+        A_Err_vec = [A_Err_vec,A_Err];
     end
     count = count + 1;
 end
@@ -112,6 +117,10 @@ end
 semilogy(Err_vec);
 xlabel('No. of Primal-Dual iterations')
 ylabel('Relative Error: Particle Density')
+figure
+semilogy(A_Err_vec);
+xlabel('No. of Primal-Dual iterations')
+ylabel('Absolute Error: Particle Density')
 %% Dose Plot
 % Calculate spatial sample points
 N = 100;
@@ -125,7 +134,8 @@ for i = 1:N
     dose(i) = integral2(@(x,y) U(x,y), x_d(i), x_d(i+1), -v, v);
 end
 figure
-plot(x_d(1:end-1),dose./max(dose),'-k')
+plot(x_d(1:end-1)+0.5*(x_d(2)-x_d(1)),dose,'-r')
+ylim([0,1.1*max(dose)]);
 hold on
-plot([0.2,0.2],[0,1],'--r'); plot([0.4,0.4],[0,1],'--r');
-ylabel('Normalised Dose'); xlabel('Position')
+ylabel('Dose'); xlabel('Position')
+fill([0.2,0.2,0.4,0.4,0.2],[-1,1.2*max(dose),1.2*max(dose),-1,-1],'cyan','FaceAlpha',0.2)
